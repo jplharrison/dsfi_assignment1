@@ -1,15 +1,7 @@
-rm(list=ls())
 
-library(keras)
-library(tensorflow)
-library(tidyverse)
-library(ggplot2)
-library(plotly)
-library(stringr)
-library(rvest)
-
-
-setwd("C:/Users/User/Dropbox/BackUp/E/Masters Advanced Analytics/STA5073 Data Science for Industry/A1/dsfi_assignment1")
+libraries <- 'libraries.R'
+source(libraries)
+setpwd()
 
 # read in text data files and organise these into a data frame
 filenames <- c('1994_post_elections_Mandela.txt', '1994_pre_elections_deKlerk.txt', '1995_Mandela.txt', '1996_Mandela.txt', '1997_Mandela.txt', '1998_Mandela.txt', 
@@ -58,6 +50,8 @@ this_speech[34] <- readChar('https://raw.githubusercontent.com/iandurbach/datasc
 this_speech[35] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2022_Ramaphosa.txt', nchars = 52972)
 this_speech[36] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2022_Ramaphosa.txt', nchars = 52972)
 
+
+
 sona <- data.frame(filename = filenames, speech = this_speech, stringsAsFactors = FALSE)
 
 # extract year and president for each speech
@@ -84,7 +78,11 @@ sona <-sona %>%
          ,date = str_replace_all(date, '--', '')
   )
 
+for(i in 1:36){
+  this_speech[i] <- str_sub(this_speech[i], str_locate_all(this_speech[i],'\n')[[1]][2]+1 ,str_length(this_speech[i]))
+}
+
 sona <- as_tibble(sona)
 
-
+save.image(file='sonaTibble.RData')
 
