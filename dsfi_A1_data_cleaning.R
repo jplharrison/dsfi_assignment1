@@ -13,6 +13,7 @@ filenames <- c('1994_post_elections_Mandela.txt', '1994_pre_elections_deKlerk.tx
 
 
 this_speech <- c()
+this_date <- c()
 this_speech[1] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1994_post_elections_Mandela.txt', nchars = 27050)
 this_speech[2] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1994_pre_elections_deKlerk.txt', nchars = 12786)
 this_speech[3] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1995_Mandela.txt', nchars = 39019)
@@ -50,20 +51,23 @@ this_speech[34] <- readChar('https://raw.githubusercontent.com/iandurbach/datasc
 this_speech[35] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2022_Ramaphosa.txt', nchars = 52972)
 this_speech[36] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2022_Ramaphosa.txt', nchars = 52972)
 
+for(i in 1:36){
+  this_date[i]<- str_sub(this_speech[i], 1 ,str_locate_all(this_speech[i],'\n')[[1]][2])
+  this_speech[i] <- str_sub(this_speech[i], str_locate_all(this_speech[i],'\n')[[1]][2]+1 ,str_length(this_speech[i]))
+}
 
-
-sona <- data.frame(filename = filenames, speech = this_speech, stringsAsFactors = FALSE)
+sona <- data.frame(filename = filenames, speech = this_speech, date=this_date, stringsAsFactors = FALSE)
 
 # extract year and president for each speech
 sona$year <- str_sub(sona$filename, start = 1, end = 4)
-sona$president_13 <- str_remove_all(str_extract(sona$filename, "[dA-Z].*\\."), "\\.")
+sona$president_speaker <- str_remove_all(str_extract(sona$filename, "[dA-Z].*\\."), "\\.")
 
 # clean the sona dataset by adding the date and removing unnecessary text
 replace_reg <- '(http.*?(\\s|.$))|(www.*?(\\s|.$))|&amp;|&lt;|&gt;|\n'
 
 sona <-sona %>%
   mutate(speech = str_replace_all(speech, replace_reg , ' ')
-         ,date = str_sub(speech, start=1, end=30)
+         ,speech = str_replace_all(speech, 'Hon.', 'Honourable')
          ,date = str_replace_all(date, "February", "02")
          ,date = str_replace_all(date, "June", "06")
          ,date = str_replace_all(date, "Feb", "02")
@@ -76,11 +80,16 @@ sona <-sona %>%
          ,date = str_replace_all(date, '----', '')
          ,date = str_replace_all(date, '---', '')
          ,date = str_replace_all(date, '--', '')
+         ,date = str_replace_all(date, ',', '')
+         ,date = str_replace_all(date, '\n', '')
+         ,date = paste0(0,date)
+         ,date = str_replace_all(date, '^00','0')
+         ,date = str_replace_all(date, '^01','1')
+         ,date = str_replace_all(date, '^02','0')
+         ,date = str_pad(date, width=10, side="left", pad="0")
   )
 
-for(i in 1:36){
-  this_speech[i] <- str_sub(this_speech[i], str_locate_all(this_speech[i],'\n')[[1]][2]+1 ,str_length(this_speech[i]))
-}
+
 
 sona <- as_tibble(sona)
 

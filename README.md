@@ -8,7 +8,7 @@ The State of the Nation Address of the President of South Africa (SONA) is an an
 
 ## Objectives
 
-- Your overall goal for this project is to construct at least three predictive models that take a
+Your overall goal for this project is to construct at least three predictive models that take a
 sentence of text as input and return a prediction of which president was the source of that
 sentence, and to write a short scientific paper (word limit: 4500) on this work that you will host
 on your own website. S
