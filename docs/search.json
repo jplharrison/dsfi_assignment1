@@ -1,0 +1,114 @@
+[
+  {
+    "objectID": "dsfi_A1.html",
+    "href": "dsfi_A1.html",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "",
+    "text": "SONA. Build, train and fit predictive models that take sentences as input and aim to classify the sentences by which president said them. Use different ways of formatting and encoding the data and compare the performance of a variety of models including…"
+  },
+  {
+    "objectID": "dsfi_A1.html#abstract",
+    "href": "dsfi_A1.html#abstract",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "",
+    "text": "SONA. Build, train and fit predictive models that take sentences as input and aim to classify the sentences by which president said them. Use different ways of formatting and encoding the data and compare the performance of a variety of models including…"
+  },
+  {
+    "objectID": "dsfi_A1.html#introduction",
+    "href": "dsfi_A1.html#introduction",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "Introduction",
+    "text": "Introduction\nThe State of the Nation Address (SONA) is an important annual event in political calendar. It provides the President of South Africa the opportunity to report on the status of the nation to a joint sitting of the two houses of Parliament, the National Assembly and the National Council of Provinces, and the country’s population at large. The address outlines the government’s agenda, priorities, and policy objectives for the upcoming year. The address will often include a reflection of country’s progress and policy performance since the previous address (South African Government, 2023). In the years in which an election is held, the SONA occurs twice, pre- and post-elections."
+  },
+  {
+    "objectID": "dsfi_A1.html#literature-review",
+    "href": "dsfi_A1.html#literature-review",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "Literature Review",
+    "text": "Literature Review"
+  },
+  {
+    "objectID": "dsfi_A1.html#data-exploration-and-methods",
+    "href": "dsfi_A1.html#data-exploration-and-methods",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "Data Exploration and Methods",
+    "text": "Data Exploration and Methods\nMost common words, sentence length.\nData Cleaning\nTokenisation and Encoding\nModels: structure, training, validation, testing"
+  },
+  {
+    "objectID": "dsfi_A1.html#results",
+    "href": "dsfi_A1.html#results",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "Results",
+    "text": "Results\nModel results: training, validation and test accuracy"
+  },
+  {
+    "objectID": "dsfi_A1.html#discussion-and-conclusion",
+    "href": "dsfi_A1.html#discussion-and-conclusion",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "Discussion and Conclusion",
+    "text": "Discussion and Conclusion\nBest performing models in training, validation and test scenarios. Discuss model performance and causes - complexity and overfitting."
+  },
+  {
+    "objectID": "dsfi_A1.html#references",
+    "href": "dsfi_A1.html#references",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "References",
+    "text": "References\nSouth African Government. 2023. “State of the Nation Address 2023.” Available at: https://www.gov.za/SONA2023 (Accessed 2023-10-08)."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "",
+    "text": "SONA. Build, train and fit predictive models that take sentences as input and aim to classify the sentences by which president said them. Use different ways of formatting and encoding the data and compare the performance of a variety of models including…"
+  },
+  {
+    "objectID": "index.html#abstract",
+    "href": "index.html#abstract",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "",
+    "text": "SONA. Build, train and fit predictive models that take sentences as input and aim to classify the sentences by which president said them. Use different ways of formatting and encoding the data and compare the performance of a variety of models including…"
+  },
+  {
+    "objectID": "index.html#introduction",
+    "href": "index.html#introduction",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "Introduction",
+    "text": "Introduction\nThe State of the Nation Address (SONA) is an important annual event in political calendar. It provides the President of South Africa the opportunity to report on the status of the nation to a joint sitting of the two houses of Parliament, the National Assembly and the National Council of Provinces, and the country’s population at large. The address outlines the government’s agenda, priorities, and policy objectives for the upcoming year. The address will often include a reflection of country’s progress and policy performance since the previous address (South African Government, 2023). In the years in which an election is held, the SONA occurs twice, pre- and post-elections."
+  },
+  {
+    "objectID": "index.html#literature-review",
+    "href": "index.html#literature-review",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "Literature Review",
+    "text": "Literature Review"
+  },
+  {
+    "objectID": "index.html#data-exploration-and-methods",
+    "href": "index.html#data-exploration-and-methods",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "Data Exploration and Methods",
+    "text": "Data Exploration and Methods\nMost common words, sentence length.\nData Cleaning\nTokenisation and Encoding\nModels: structure, training, validation, testing"
+  },
+  {
+    "objectID": "index.html#results",
+    "href": "index.html#results",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "Results",
+    "text": "Results\nModel results: training, validation and test accuracy"
+  },
+  {
+    "objectID": "index.html#discussion-and-conclusion",
+    "href": "index.html#discussion-and-conclusion",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "Discussion and Conclusion",
+    "text": "Discussion and Conclusion\nBest performing models in training, validation and test scenarios. Discuss model performance and causes - complexity and overfitting."
+  },
+  {
+    "objectID": "index.html#references",
+    "href": "index.html#references",
+    "title": "STA5073Z, Data Science for Industry: Assignment 1",
+    "section": "References",
+    "text": "References\nSouth African Government. 2023. “State of the Nation Address 2023.” Available at: https://www.gov.za/SONA2023 (Accessed 2023-10-08)."
+  }
+]

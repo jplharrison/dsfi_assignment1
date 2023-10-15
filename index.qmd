@@ -1,0 +1,35 @@
+---
+title: "STA5073Z, Data Science for Industry: Assignment 1"
+---
+
+## Abstract
+
+SONA. Build, train and fit predictive models that take sentences as input and aim to classify the sentences by which president said them. Use different ways of formatting and encoding the data and compare the performance of a variety of models including...
+
+## Introduction
+
+The State of the Nation Address (SONA) is an important annual event in political calendar. It provides the President of South Africa the opportunity to report on the status of the nation to a joint sitting of the two houses of Parliament, the National Assembly and the National Council of Provinces, and the country's population at large. The address outlines the government's agenda, priorities, and policy objectives for the upcoming year. The address will often include a reflection of country's progress and policy performance since the previous address (South African Government, 2023). In the years in which an election is held, the SONA occurs twice, pre- and post-elections.
+
+## Literature Review
+
+## Data Exploration and Methods
+
+Most common words, sentence length.
+
+Data Cleaning
+
+Tokenisation and Encoding
+
+Models: structure, training, validation, testing
+
+## Results
+
+Model results: training, validation and test accuracy
+
+## Discussion and Conclusion
+
+Best performing models in training, validation and test scenarios. Discuss model performance and causes - complexity and overfitting.
+
+## References
+
+South African Government. 2023. "State of the Nation Address 2023." Available at: <https://www.gov.za/SONA2023> (Accessed 2023-10-08).
