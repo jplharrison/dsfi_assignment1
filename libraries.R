@@ -1,4 +1,4 @@
-rm(list=ls())
+#rm(list=ls())
 setpwd <- function(){setwd(dirname(rstudioapi::getActiveDocumentContext()$path))}
 library(reticulate)
 library(keras)
