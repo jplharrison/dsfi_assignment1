@@ -34,7 +34,7 @@ The data set contains thirty-six SONA speeches from six different president betw
 
 ## Methodology
 
-The data is read in from an external repository. The dates are modified to a uniform format and the dates and presidents' names are used to differentiate the speeches. The date is removed from start of each speech. Punctuation and other unwanted characters are removed. The speeches are then split into sentences, each sentence is given an ID and the word count is calculated. Any sentence of two or less words is discarded. The sentences are then tokenised into words to create a dictionary. The dictionary is then used to generate a sentence-term matrix containing every word in every sentence - this is the bag of words data frame. A second sentence-term matrix is encoded using term frequency-inverse document frequency (TF-IDF) to down-weight words that occur commonly throughout the sentences.
+The data is read in from an external repository. The dates are modified to a uniform format and the dates and presidents' names are used to differentiate the speeches. The date is removed from start of each speech. Punctuation and other unwanted characters are removed. The speeches are then split into sentences, each sentence is given an ID and the word count is calculated. Any sentence of two or less words is discarded. The sentences are then tokenised into words to create a dictionary. The dictionary is then used to generate a sentence-term matrix containing every word in every sentence - this is the bag of words data frame. A second sentence-term matrix is encoded using term frequency-inverse document frequency (TF-IDF) to down-weight words that occur commonly throughout the sentences. All models will be built using both the bag of words and the TF-IDF configuration of the data.
 
 The data is split into training, validation, and test sets. Both the bag of words and the TF-IDF data frames are split 60% training, 20% validation, and 20% testing. The data is split in proportion to the relative number of sentences sourced from each president. This ensures proportional representation of each president in each set and prevents the under-represented presidents from being excluded from one of the data sets.
 
@@ -48,9 +48,620 @@ The multilayer perceptrons (MLPs) consist of an input layer, a series of hidden 
 
 The models are trained on 60% of the data, where the models aim to minimise the training misclassifications. The model performances are then assessed using the validation data set to check how different configurations of each model (depth of trees, learning rates, complexity of hidden layers etc) affect the models' predictive power on unseen data. The best model is selected based on the validation accuracy. The best model is then tested on the saved test data to get an estimate of the model's real performance on real-world unseen data.
 
+```{r, eval=FALSE, echo=FALSE, message=FALSE}
+
+setpwd <- function(){setwd(dirname(rstudioapi::getActiveDocumentContext()$path))}
+library(reticulate)
+library(keras)
+library(tensorflow)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(stringr)
+library(rvest)
+library(lubridate)
+library(tidytext)
+library(rpart)
+library(xgboost)
+library(nnet)
+library(caret)
+library(Metrics)
+library(e1071)
+
+### DATA CLEANING
+# read in text data files and organise these into a data frame
+filenames <- c('1994_post_elections_Mandela.txt', '1994_pre_elections_deKlerk.txt', '1995_Mandela.txt', '1996_Mandela.txt', '1997_Mandela.txt', '1998_Mandela.txt', 
+               '1999_post_elections_Mandela.txt', '1999_pre_elections_Mandela.txt', '2000_Mbeki.txt', '2001_Mbeki.txt', '2002_Mbeki.txt', '2003_Mbeki.txt', 
+               '2004_post_elections_Mbeki.txt', '2004_pre_elections_Mbeki.txt', '2005_Mbeki.txt', '2006_Mbeki.txt', '2007_Mbeki.txt', '2008_Mbeki.txt', 
+               '2009_post_elections_Zuma.txt', '2009_pre_elections_ Motlanthe.txt', '2010_Zuma.txt', '2011_Zuma.txt', '2012_Zuma.txt', '2013_Zuma.txt', 
+               '2014_post_elections_Zuma.txt', '2014_pre_elections_Zuma.txt', '2015_Zuma.txt', '2016_Zuma.txt', '2017_Zuma.txt', '2018_Ramaphosa.txt', 
+               '2019_post_elections_Ramaphosa.txt', '2019_pre_elections_Ramaphosa.txt', '2020_Ramaphosa.txt', '2021_Ramaphosa.txt', '2022_Ramaphosa.txt', '2023_Ramaphosa.txt')
+
+
+this_speech <- c()
+this_date <- c()
+this_speech[1] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1994_post_elections_Mandela.txt', nchars = 27050)
+this_speech[2] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1994_pre_elections_deKlerk.txt', nchars = 12786)
+this_speech[3] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1995_Mandela.txt', nchars = 39019)
+this_speech[4] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1996_Mandela.txt', nchars = 39524)
+this_speech[5] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1997_Mandela.txt', nchars = 37489)
+this_speech[6] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1998_Mandela.txt', nchars = 45247)
+this_speech[7] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1999_post_elections_Mandela.txt', nchars = 34674)
+this_speech[8] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/1999_pre_elections_Mandela.txt', nchars = 41225)
+this_speech[9] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2000_Mbeki.txt', nchars = 37552)
+this_speech[10] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2001_Mbeki.txt', nchars = 41719)
+this_speech[11] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2002_Mbeki.txt', nchars = 50544)
+this_speech[12] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2003_Mbeki.txt', nchars = 58284)
+this_speech[13] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2004_post_elections_Mbeki.txt', nchars = 34590)
+this_speech[14] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2004_pre_elections_Mbeki.txt', nchars = 39232)
+this_speech[15] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2005_Mbeki.txt', nchars = 54635)
+this_speech[16] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2006_Mbeki.txt', nchars = 48643)
+this_speech[17] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2007_Mbeki.txt', nchars = 48641)
+this_speech[18] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2008_Mbeki.txt', nchars = 44907)
+this_speech[19] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2009_post_elections_Zuma.txt', nchars = 31101)
+this_speech[20] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2009_pre_elections_Motlanthe.txt', nchars = 47157)
+this_speech[21] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2010_Zuma.txt', nchars = 26384)
+this_speech[22] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2011_Zuma.txt', nchars = 33281)
+this_speech[23] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2012_Zuma.txt', nchars = 33376)
+this_speech[24] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2013_Zuma.txt', nchars = 36006)
+this_speech[25] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2014_post_elections_Zuma.txt', nchars = 29403)
+this_speech[26] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2014_pre_elections_Zuma.txt', nchars = 36233)
+this_speech[27] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2015_Zuma.txt', nchars = 32860)
+this_speech[28] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2016_Zuma.txt', nchars = 32464)
+this_speech[29] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2017_Zuma.txt', nchars = 35981)
+this_speech[30] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2018_Ramaphosa.txt', nchars = 33290)
+this_speech[31] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2019_post_elections_Ramaphosa.txt', nchars = 42112)
+this_speech[32] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2019_pre_elections_Ramaphosa.txt', nchars = 56960)
+this_speech[33] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2020_Ramaphosa.txt', nchars = 47910)
+this_speech[34] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2021_Ramaphosa.txt', nchars = 43352)
+this_speech[35] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2022_Ramaphosa.txt', nchars = 52972)
+this_speech[36] <- readChar('https://raw.githubusercontent.com/iandurbach/datasci-fi/master/data/sona/2022_Ramaphosa.txt', nchars = 52972)
+
+for(i in 1:36){
+  this_date[i]<- str_sub(this_speech[i], 1 ,str_locate_all(this_speech[i],'\n')[[1]][2])
+  this_speech[i] <- str_sub(this_speech[i], str_locate_all(this_speech[i],'\n')[[1]][2]+1 ,str_length(this_speech[i]))
+}
+
+sona <- data.frame(filename = filenames, speech = this_speech, date=this_date, stringsAsFactors = FALSE)
+
+# extract year and president for each speech
+sona$year <- str_sub(sona$filename, start = 1, end = 4)
+sona$president_speaker <- str_remove_all(str_extract(sona$filename, "[dA-Z].*\\."), "\\.")
+
+# clean the sona dataset by adding the date and removing unnecessary text
+replace_reg <- '(http.*?(\\s|.$))|(www.*?(\\s|.$))|&amp;|&lt;|&gt;|\n'
+
+sona <-sona %>%
+  mutate(speech = str_replace_all(speech, replace_reg , ' ')
+         ,speech = str_replace_all(speech, 'Hon.', 'Honourable')
+         ,date = str_replace_all(date, "February", "02")
+         ,date = str_replace_all(date, "June", "06")
+         ,date = str_replace_all(date, "Feb", "02")
+         ,date = str_replace_all(date, "May", "05")
+         ,date = str_replace_all(date, "Jun", "06")
+         ,date = str_replace_all(date, "Thursday, ","")
+         ,date = str_replace_all(date, ' ', '-')        
+         ,date = str_replace_all(date, "[A-z]",'')
+         ,date = str_replace_all(date, '-----', '')
+         ,date = str_replace_all(date, '----', '')
+         ,date = str_replace_all(date, '---', '')
+         ,date = str_replace_all(date, '--', '')
+         ,date = str_replace_all(date, ',', '')
+         ,date = str_replace_all(date, '\n', '')
+         ,date = paste0(0,date)
+         ,date = str_replace_all(date, '^00','0')
+         ,date = str_replace_all(date, '^01','1')
+         ,date = str_replace_all(date, '^02','0')
+         ,date = str_pad(date, width=10, side="left", pad="0")
+  )
+
+sona <- as_tibble(sona)
+save.image(file='sonaTibble.RData')
+
+
+### TOKENISATION
+
+# Tokenisation
+sona_sentences <- sona %>% unnest_tokens(sentence, speech, token = 'sentences') %>% mutate(sentence_id=row_number())
+sona_sentences <- sona_sentences %>% 
+  left_join(sona_sentences %>% unnest_tokens(word, sentence, token = 'words') %>% group_by(sentence_id) %>% count() %>% ungroup()) %>% 
+  mutate(word_count=n) %>% select(-n) %>%  # Add word count
+  filter(word_count>2) # remove sentences of two words or less
+sona_words <- sona_sentences %>% unnest_tokens(word, sentence, token = 'words')
+
+dict <- sona_words %>%
+  group_by(word) %>%
+  count(sort=T) %>%
+  ungroup()
+
+sentence_dict <- sona_words %>%
+  inner_join(dict) %>%
+  group_by(sentence_id,word) %>%
+  count() %>%  
+  group_by(sentence_id) %>%
+  mutate(total = sum(n)) %>%
+  ungroup() %>% 
+  left_join(sona_words %>% group_by(word) %>% 
+  summarize(sentence_with_word = n()) %>% 
+  ungroup())
+
+sentence_count <- length(unique(sentence_dict$sentence_id))
+
+bag_of_words <- sentence_dict %>% 
+  select(sentence_id, word, n) %>% 
+  pivot_wider(names_from = word, values_from = n, values_fill = 0) %>%
+  left_join(sona_sentences %>% select(sentence_id, president_speaker), by = 'sentence_id') %>%
+  select(sentence_id, president_speaker, everything())
+
+sentence_dict <- sentence_dict %>% bind_tf_idf(word, sentence_id, n) 
+
+idf_bag <- sentence_dict %>% 
+  select(sentence_id, word, tf_idf) %>%  
+  pivot_wider(names_from = word, values_from = tf_idf, values_fill = 0) %>%  
+  left_join(sona_sentences %>% select(sentence_id,president_speaker), by = c('sentence_id')) %>%
+  select(sentence_id, president_speaker, everything())
+
+save(file='sonaTokens.RData', list=c('idf_bag', 'bag_of_words', 'sentence_count','sentence_dict', 'dict', 'sona_sentences'))
+
+### EDA 
+
+sentence_lengths <- sona_sentences %>% group_by(president_speaker, year) %>% 
+  mutate(mean_count = mean(word_count)) %>%
+  select(president_speaker, year, mean_count) %>% ungroup()
+
+plot(sentence_lengths$year, sentence_lengths$mean_count, 
+     col=as.factor(sentence_lengths$president_speaker), pch =19, cex=sentence_lengths$mean_count/10,
+     ylab='Word Count Per Sentence', xlab='Year', main='Average Sentence Length by President')
+legend('topright', legend=unique(sentence_lengths$president_speaker),
+       col=as.factor(unique(sentence_lengths$president_speaker)), 
+       pch =19, cex=1.2, bty='n')
+
+name_counts <- sentence_dict %>% 
+  filter(word %in% c('mandela','zuma','klerk','motlanthe', 'mbeki','ramaphosa')) %>% 
+  #'nelson','jacob','thabo',,'cyril'
+  inner_join(sona_sentences) %>% 
+  group_by(president_speaker, word) %>% count() %>% ungroup() %>% 
+  select(president_speaker, word, n) %>%
+  pivot_wider(names_from = word, values_from = n, values_fill = 0) 
+
+name_mat <- as.matrix(name_counts[,-1]); row.names(name_mat) <- name_counts$president_speaker;
+barplot(t(name_mat), beside=T,legend.text = colnames(name_mat),
+        args.legend = list(x='top', bty='n'), main='Frequency of President Names in Speeches') 
+
+### CLASSIFICATION 
+
+#### TF-IDF Data ####
+#Data Split 60-20-20 sentences for each president to ensure proportional representation
+# the train set will be used for model fitting
+# the validation set will be used for model selection.
+# the test set will be set aside for OOS performance of final model
+set.seed(2023)
+n <- dim(idf_bag)[1];train_size <- round(0.6*n);val_size <- round(0.2*n);test_size <- round(0.2*n);
+
+train_set <- idf_bag %>% 
+  group_by(president_speaker) %>% 
+  slice_sample(prop=0.6) %>% 
+  ungroup() %>%
+  select(sentence_id)
+
+val_set <- idf_bag %>% anti_join(train_set, by = 'sentence_id') %>%
+  group_by(president_speaker) %>% 
+  slice_sample(prop=0.5) %>% 
+  ungroup() %>%
+  select(sentence_id)
+  
+test_set <- idf_bag %>%
+  anti_join(train_set, by = 'sentence_id') %>% 
+  anti_join(val_set, by = 'sentence_id') %>%
+  select(sentence_id) 
+  
+test_d <- idf_bag %>% 
+  right_join(test_set, by = 'sentence_id') %>%
+  select(-sentence_id) %>% mutate(president_speaker = factor(president_speaker))
+
+val_d <- idf_bag %>% 
+  right_join(val_set, by = 'sentence_id') %>%
+  select(-sentence_id) %>% mutate(president_speaker = factor(president_speaker))
+
+train_d <- idf_bag %>% 
+  right_join(train_set, by = 'sentence_id') %>%
+  select(-sentence_id) %>% mutate(president_speaker = factor(president_speaker))
+
+## TF-IDF Training Data in Matrix Format
+train_X <- as.matrix(train_d[,-1])
+train_y <- as.integer(train_d$president_speaker)-1
+
+val_X <- as.matrix(val_d[,-1])
+val_y <- as.integer(val_d$president_speaker)-1
+# Change format of training data to matrix for xgboost
+# 0        1       2     3         4         5
+# deKlerk  Mandela Mbeki Motlanthe Ramaphosa Zuma
+
+# TF-IDF Training and Validation Responses - One-Hot Encoding
+train_yoh <- to_categorical(train_y, num_classes = 6)
+val_yoh <- to_categorical(val_y, num_classes = 6)
+
+#### TF-IDF - Extreme Gradient Boosting Classification ####
+xgb_models <- list()
+xgb_model_summary <- matrix(0, ncol=6, nrow=7); colnames(xgb_model_summary) <- c('Model', 'eta', 'depth','nrounds','train_%','val_%')
+for(i in 1:7){
+parms <- list(
+  objective = "multi:softmax",
+  num_class = length(levels(train_d$president_speaker)),
+  eta = (i/10),
+  max_depth = 6
+)
+n_rounds <- 150
+m_xgb <- xgboost(data = train_X, label = train_y,
+                 nrounds = n_rounds, params = parms)
+xgb_models[[i]] <- m_xgb
+
+train_fit_xgb  <- predict(m_xgb, train_X)
+val_fit_xgb    <- predict(m_xgb, val_X)
+train_pred_xgb <- table(train_y, train_fit_xgb); colnames(train_pred_xgb) <- levels(train_d$president_speaker); row.names(train_pred_xgb) <- levels(train_d$president_speaker);
+val_pred_xgb   <- table(val_y, val_fit_xgb); colnames(val_pred_xgb) <- levels(train_d$president_speaker); row.names(val_pred_xgb) <- levels(train_d$president_speaker);
+
+#train_pred_xgb
+train_pred_xgb_pres  <- diag(train_pred_xgb)/rowSums(train_pred_xgb)  # accuracy per president
+train_pred_xgb_total <- sum(diag(train_pred_xgb))/sum(train_pred_xgb) # overall accuracy 0.972
+#val_pred_xgb
+val_pred_xgb_pres <- diag(val_pred_xgb)/rowSums(val_pred_xgb)  # accuracy per president
+val_pred_xgb_total <- sum(diag(val_pred_xgb))/sum(val_pred_xgb) # overall validation accuracy 0.561
+
+xgb_model_summary[i,] <- c(i, parms$eta, parms$max_depth, n_rounds, round(train_pred_xgb_total,3), round(val_pred_xgb_total,3))
+}
+
+#### TF-IDF Multi-layer perceptron model ####
+set.seed(4096)
+n_mlp=4
+
+#### TF-IDF MLP with a 1-4 layers of 64 nodes ####
+mlp_metrics <- matrix(NA, nrow=n_mlp, ncol=30)
+mlp_validation <- matrix(NA, nrow=n_mlp, ncol=2)
+m_mlp_base <- keras_model_sequential() %>%
+  layer_dense(units = 64, input_shape = dim(train_X)[2], activation = "relu")
+
+for(m in 1:n_mlp){
+  
+  m_mlp_base <- m_mlp_base %>%
+    layer_dense(units = 64, activation = "relu")
+  
+  m_mlp_out <- m_mlp_base %>%
+    layer_dense(units = 6, activation = "softmax") %>% 
+    compile(loss = "categorical_crossentropy",
+            optimizer = "adam",
+            metrics = "accuracy")
+  
+  fit_mlp <- m_mlp_out %>% fit(train_X, train_yoh, epochs = 30, batch_size = 128, verbose = 0) 
+  val_pred_mlp <- m_mlp_out %>% evaluate(val_X, val_yoh)
+  
+  mlp_metrics[m,] <- fit_mlp$metrics$accuracy
+  mlp_validation[m,] <- val_pred_mlp
+}
+
+#### TF-IDF MLP with 1-4 layers of 32 nodes ####
+mlp_metrics32 <- matrix(NA, nrow=n_mlp, ncol=30)
+mlp_validation32 <- matrix(NA, nrow=n_mlp, ncol=2)
+
+m_mlp_base <- keras_model_sequential() %>%
+  layer_dense(units = 64, input_shape = dim(train_X)[2], activation = "relu")
+
+par(mfrow=c(ceiling(n_mlp/2), 2))
+for(m in 1:n_mlp){
+  
+  m_mlp_base <- m_mlp_base %>%
+    layer_dense(units = 32, activation = "relu")
+  
+  m_mlp_out <- m_mlp_base %>%
+    layer_dense(units = 6, activation = "softmax") %>% 
+    compile(loss = "categorical_crossentropy",
+            optimizer = "adam",
+            metrics = "accuracy")
+  
+  fit_mlp <- m_mlp_out %>% fit(train_X, train_yoh, epochs = 30, batch_size = 128, verbose = 0) 
+  val_pred_mlp <- m_mlp_out %>% evaluate(val_X, val_yoh)
+  
+  mlp_metrics32[m,] <- fit_mlp$metrics$accuracy
+  mlp_validation32[m,] <- val_pred_mlp
+}
+
+# TF-IDF MLP Prediction Accuracy
+par(mfrow=c(1,1))
+plot(mlp_validation[,2], xlab='n layers', col='blue', pch=4, ylim=c(0.4,0.6), ylab='Prediction Accuracy', lwd=2)
+points(mlp_validation32[,2], col='red', pch=3, lwd=2)
+legend('bottomleft', legend=c('Validation: 64 node','Validation: 32 nodes'), pch=c(4,3), col=c('blue','red'), bty='n')
+points(mlp_metrics[,30], col='blue', pch=4)
+points(mlp_metrics[,30], col='red', pch=3)
+
+#### TF-IDF - Decision Tree ####
+
+set.seed(2023)
+cpv <- c(0.1,0.01,0.001)
+depthv <- c(25,50,100)
+tree_val_index <- sample(1:1868, 5606, replace=T)
+tree_train_accuracy <- c()
+tree_val_accuracy <- c()
+m_trees <- list()
+for(i in 1:3){
+  for(j in 1:3){
+    m_tree <- rpart(train_y~train_X, method='class',
+                    control = c(20, 6, cpv[i],5,0,0,20,0,depthv[j]))
+    tree_pred <- predict(m_tree, newdata = as.data.frame(train_X), type='class')
+    tree_val <- predict(m_tree, newdata = as.data.frame(val_X[tree_val_index,]), type='class')
+    tree_train_accuracy <- c(tree_train_accuracy, mean(tree_pred==train_y))
+    tree_val_accuracy <-  c(tree_val_accuracy, mean(tree_val==val_y[tree_val_index]))
+    m_trees[[(j+(i-1)*3)]] <- m_tree
+  }
+}
+m_tree <- rpart(train_y~train_X, method='class',
+                control = c(20, 6, 0.5 ,5,0,0,20,0,30))
+tree_pred <- predict(m_tree, newdata = as.data.frame(train_X), type='class')
+tree_val <- predict(m_tree, newdata = as.data.frame(val_X[tree_val_index,]), type='class')
+tree_train_accuracy <- c(tree_train_accuracy, mean(tree_pred==train_y))
+tree_val_accuracy <-  c(tree_val_accuracy, mean(tree_val==val_y[tree_val_index]))
+
+tree_summary <- cbind(c(rep(cpv[1],3), rep(cpv[2],3), rep(cpv[3],3), 0.5),
+                      c(rep(depthv,3), 30),
+                      tree_train_accuracy,
+                      tree_val_accuracy)
+colnames(tree_summary) <- c('Complexity', 'Depth', 'TrainingAccuracy', 'ValidationAccuracy')
+
+#### TF-IDF Naive and Uniform Models #### 
+
+set.seed(123)
+president_proportion <- prop.table(table(train_y))
+# Naive classifier - generated by Chat GPT
+naive_predict <- function(X_data) {
+  y_data <- sample(0:5, dim(X_data)[1], prob = president_proportion, replace=T)
+  return(y_data)
+}
+naive_train_pred <- naive_predict(train_X)
+naive_val_pred <- naive_predict(val_X)
+
+naive_train_accuracy <- mean(train_y==naive_train_pred)
+naive_val_accuracy <- mean(val_y==naive_val_pred)
+
+uniform_predict <- function(X_data) {
+  y_data <- sample(0:5, dim(X_data)[1], prob = rep(1/6,6), replace=T)
+  return(y_data)
+}
+
+uniform_train_pred <- uniform_predict(train_X)
+uniform_val_pred <- uniform_predict(val_X)
+uniform_train_accuracy <- mean(train_y==uniform_train_pred)
+uniform_val_accuracy <- mean(val_y==uniform_val_pred)
+
+#### BAG OF WORDS ####
+#### BAG OF WORDS Data ####
+set.seed(2023)
+n <- dim(bag_of_words)[1];train_size <- round(0.6*n);val_size <- round(0.2*n);test_size <- round(0.2*n);
+
+BoW_train_set <- bag_of_words %>% 
+  group_by(president_speaker) %>% 
+  slice_sample(prop=0.6) %>% 
+  ungroup() %>%
+  select(sentence_id)
+
+BoW_val_set <- bag_of_words %>% anti_join(BoW_train_set, by = 'sentence_id') %>%
+  group_by(president_speaker) %>% 
+  slice_sample(prop=0.5) %>% 
+  ungroup() %>%
+  select(sentence_id)
+
+BoW_test_set <- bag_of_words %>%
+  anti_join(BoW_train_set, by = 'sentence_id') %>% 
+  anti_join(BoW_val_set, by = 'sentence_id') %>%
+  select(sentence_id) 
+
+BoW_test_d <- bag_of_words %>% 
+  right_join(BoW_test_set, by = 'sentence_id') %>%
+  select(-sentence_id) %>% mutate(president_speaker = factor(president_speaker))
+
+BoW_val_d <- bag_of_words %>% 
+  right_join(BoW_val_set, by = 'sentence_id') %>%
+  select(-sentence_id) %>% mutate(president_speaker = factor(president_speaker))
+
+BoW_train_d <- bag_of_words %>% 
+  right_join(BoW_train_set, by = 'sentence_id') %>%
+  select(-sentence_id) %>% mutate(president_speaker = factor(president_speaker))
+
+## BoW Training Data in Matrix Format
+BoW_train_X <- as.matrix(BoW_train_d[,-1])
+BoW_train_y <- as.integer(BoW_train_d$president_speaker)-1
+
+BoW_val_X <- as.matrix(BoW_val_d[,-1])
+BoW_val_y <- as.integer(BoW_val_d$president_speaker)-1
+# Change format of training data to matrix for xgboost
+# 0        1       2     3         4         5
+# deKlerk  Mandela Mbeki Motlanthe Ramaphosa Zuma
+
+# BoW training and validation Responses - One-Hot Encoding
+BoW_train_yoh <- to_categorical(BoW_train_y, num_classes = 6)
+BoW_val_yoh <- to_categorical(BoW_val_y, num_classes = 6)
+
+#### BAG OF WORDS - Extreme Gradient Boosting Classification ####
+BoW_xgb_models <- list()
+BoW_xgb_model_summary <- matrix(0, ncol=6, nrow=7); colnames(BoW_xgb_model_summary) <- c('Model', 'eta', 'depth','nrounds','BoW_train_%','BoW_val_%')
+for(i in 1:7){
+  parms <- list(
+    objective = "multi:softmax",
+    num_class = length(levels(BoW_train_d$president_speaker)),
+    eta = (i/10),
+    max_depth = 6
+  )
+  n_rounds <- 150
+  m_xgb <- xgboost(data = BoW_train_X, label = BoW_train_y,
+                   nrounds = n_rounds, params = parms)
+  BoW_xgb_models[[i]] <- m_xgb
+  
+  BoW_val_X <- as.matrix(BoW_val_d[,-1])
+  BoW_val_y <- as.integer(BoW_val_d$president_speaker)-1
+  BoW_train_fit_xgb  <- predict(m_xgb, BoW_train_X)
+  BoW_val_fit_xgb    <- predict(m_xgb, BoW_val_X)
+  BoW_train_pred_xgb <- table(BoW_train_y, BoW_train_fit_xgb); colnames(BoW_train_pred_xgb) <- levels(BoW_train_d$president_speaker); row.names(BoW_train_pred_xgb) <- levels(BoW_train_d$president_speaker);
+  BoW_val_pred_xgb   <- table(BoW_val_y, BoW_val_fit_xgb); colnames(BoW_val_pred_xgb) <- levels(BoW_train_d$president_speaker); row.names(BoW_val_pred_xgb) <- levels(BoW_train_d$president_speaker);
+  
+  #BoW_train_pred_xgb
+  BoW_train_pred_BoW_xgb_pres  <- diag(BoW_train_pred_xgb)/rowSums(BoW_train_pred_xgb)  # accuracy per president
+  BoW_train_pred_BoW_xgb_total <- sum(diag(BoW_train_pred_xgb))/sum(BoW_train_pred_xgb) # overall accuracy 0.972
+  #BoW_val_pred_xgb
+  BoW_val_pred_BoW_xgb_pres <- diag(BoW_val_pred_xgb)/rowSums(BoW_val_pred_xgb)  # accuracy per president
+  BoW_val_pred_BoW_xgb_total <- sum(diag(BoW_val_pred_xgb))/sum(BoW_val_pred_xgb) # overall BoW_validation accuracy 0.561
+  BoW_xgb_model_summary[i,] <- c(i, parms$eta, parms$max_depth, n_rounds, round(BoW_train_pred_BoW_xgb_total,3), round(BoW_val_pred_BoW_xgb_total,3))
+}
+#### BAG OF WORDS - Multilayer Perceptron ####
+set.seed(4096)
+n_mlp=4
+
+#### BAG OF WORDS MLP with a 1-4 layers of 64 nodes ####
+BoW_mlp_metrics <- matrix(NA, nrow=n_mlp, ncol=30)
+BoW_mlp_validation <- matrix(NA, nrow=n_mlp, ncol=2)
+m_BoW_mlp_base <- keras_model_sequential() %>%
+  layer_dense(units = 64, input_shape = dim(BoW_train_X)[2], activation = "relu")
+
+for(m in 1:n_mlp){
+  
+  m_BoW_mlp_base <- m_BoW_mlp_base %>%
+    layer_dense(units = 64, activation = "relu")
+  
+  m_BoW_mlp_out <- m_BoW_mlp_base %>%
+    layer_dense(units = 6, activation = "softmax") %>% 
+    compile(loss = "categorical_crossentropy",
+            optimizer = "adam",
+            metrics = "accuracy")
+  
+  fit_mlp <- m_BoW_mlp_out %>% fit(BoW_train_X, BoW_train_yoh, epochs = 30, batch_size = 128, verbose = 0) 
+  BoW_val_pred_mlp <- m_BoW_mlp_out %>% evaluate(BoW_val_X, BoW_val_yoh)
+  
+  BoW_mlp_metrics[m,] <- fit_mlp$metrics$accuracy
+  BoW_mlp_validation[m,] <- BoW_val_pred_mlp
+}
+
+#### BAG OF WORDS MLP with 1-4 layers of 32 nodes ####
+BoW_mlp_metrics32 <- matrix(NA, nrow=n_mlp, ncol=30)
+BoW_mlp_validation32 <- matrix(NA, nrow=n_mlp, ncol=2)
+
+m_BoW_mlp_base <- keras_model_sequential() %>%
+  layer_dense(units = 64, input_shape = dim(BoW_train_X)[2], activation = "relu")
+
+par(mfrow=c(ceiling(n_mlp/2), 2))
+for(m in 1:n_mlp){
+  
+  m_BoW_mlp_base <- m_BoW_mlp_base %>%
+    layer_dense(units = 32, activation = "relu")
+  
+  m_BoW_mlp_out <- m_BoW_mlp_base %>%
+    layer_dense(units = 6, activation = "softmax") %>% 
+    compile(loss = "categorical_crossentropy",
+            optimizer = "adam",
+            metrics = "accuracy")
+  
+  fit_mlp <- m_BoW_mlp_out %>% fit(BoW_train_X, BoW_train_yoh, epochs = 30, batch_size = 128, verbose = 0) 
+  BoW_val_pred_mlp <- m_BoW_mlp_out %>% evaluate(BoW_val_X, BoW_val_yoh)
+  
+  BoW_mlp_metrics32[m,] <- fit_mlp$metrics$accuracy
+  BoW_mlp_validation32[m,] <- BoW_val_pred_mlp
+}
+
+#### BAG OF WORDS DECISION TREE
+set.seed(2023)
+cpv <- c(0.1,0.01,0.001)
+depthv <- c(25,50,100)
+BoW_tree_val_index <- sample(1:1868, 5606, replace=T)
+BoW_tree_train_accuracy <- c()
+BoW_tree_val_accuracy <- c()
+m_trees <- list()
+for(i in 1:3){
+  for(j in 1:3){
+    m_tree <- rpart(BoW_train_y~BoW_train_X, method='class',
+                    control = c(20, 6, cpv[i],5,0,0,20,0,depthv[j]))
+    BoW_tree_pred <- predict(m_tree, newdata = as.data.frame(BoW_train_X), type='class')
+    BoW_tree_val <- predict(m_tree, newdata = as.data.frame(BoW_val_X[BoW_tree_val_index,]), type='class')
+    BoW_tree_train_accuracy <- c(BoW_tree_train_accuracy, mean(BoW_tree_pred==BoW_train_y))
+    BoW_tree_val_accuracy <-  c(BoW_tree_val_accuracy, mean(BoW_tree_val==BoW_val_y[BoW_tree_val_index]))
+    m_trees[[(j+(i-1)*3)]] <- m_tree
+  }
+}
+m_tree <- rpart(BoW_train_y~BoW_train_X, method='class',
+                control = c(20, 6, 0.5 ,5,0,0,20,0,30))
+BoW_tree_pred <- predict(m_tree, newdata = as.data.frame(BoW_train_X), type='class')
+BoW_tree_val <- predict(m_tree, newdata = as.data.frame(BoW_val_X[BoW_tree_val_index,]), type='class')
+BoW_tree_train_accuracy <- c(BoW_tree_train_accuracy, mean(BoW_tree_pred==BoW_train_y))
+BoW_tree_val_accuracy <-  c(BoW_tree_val_accuracy, mean(BoW_tree_val==BoW_val_y[BoW_tree_val_index]))
+
+BoW_tree_summary <- cbind(c(rep(cpv[1],3), rep(cpv[2],3), rep(cpv[3],3), 0.5),
+                      c(rep(depthv,3), 30),
+                      BoW_tree_train_accuracy,
+                      BoW_tree_val_accuracy)
+colnames(BoW_tree_summary) <- c('Complexity', 'Depth', 'TrainingAccuracy', 'ValidationAccuracy')
+
+#### BAG OF WORDS Naive and Uniform Models #### 
+set.seed(123)
+BoW_naive_train_pred <- naive_predict(BoW_train_X)
+BoW_naive_val_pred <- naive_predict(BoW_val_X)
+BoW_naive_train_accuracy <- mean(BoW_train_y==BoW_naive_train_pred)
+BoW_naive_val_accuracy <- mean(BoW_val_y==BoW_naive_val_pred)
+
+BoW_uniform_train_pred <- uniform_predict(BoW_train_X)
+BoW_uniform_val_pred <- uniform_predict(BoW_val_X)
+BoW_uniform_train_accuracy <- mean(BoW_train_y==BoW_uniform_train_pred)
+BoW_uniform_val_accuracy <- mean(BoW_val_y==BoW_uniform_val_pred)
+
+
+
+```
+
 ## Results
 
-Model results: training, validation and test accuracy
+The uniform model had a training accuracy of 0.173 and a validation accuracy of 0.177. This are approximately one sixth (0.167) with some variation based on the sampling of the training and validation indices. The naive model has a training accuracy of 0.231 and a validation accuracy of 0.243. This approximately a one-in-four probability - this is because de Klerk and Motlanthe combined make up less than 3% of the training data. This is the prediction power that the following classification models will have to outperform in order to provide any utility.
+
+```{r, eval=TRUE, echo=FALSE, message=FALSE}
+load(file='a1data.RData')
+
+# Tree Models
+par(mfrow=c(1,2)); 
+plot(BoW_tree_summary[,1], BoW_tree_summary[,3], main='Decision Tree Parameterisation', 
+     pch=16, ylab='Accuracy',xlab=colnames(BoW_tree_summary)[1]); 
+points(BoW_tree_summary[,1], BoW_tree_summary[,4], pch=16, col='red')
+points(tree_summary[,1], tree_summary[,3], pch=3, col='blue', lwd=2)
+points(tree_summary[,1], tree_summary[,4], pch=4, col='green', lwd=2)
+legend('top', bty='n', legend=c('BoW Train', 'BoW Val', 'TFIDF Train', 'TFIDF Val'), col=c('black','red','blue','green'),pch=c(16,16,3,4))
+plot(BoW_tree_summary[,2], BoW_tree_summary[,3], pch=16, ylab='Accuracy',xlab=colnames(BoW_tree_summary)[2]); points(BoW_tree_summary[,2], BoW_tree_summary[,4], pch=16, col='red')
+points(tree_summary[,2], tree_summary[,3], pch=3, col='blue', lwd=2)
+points(tree_summary[,2], tree_summary[,4], pch=4, col='green', lwd=2)
+legend('top', bty='n', legend=c('BoW Train', 'BoW Val', 'TFIDF Train', 'TFIDF Val'), col=c('black','red','blue','green'),pch=c(16,16,3,4))
+
+## MLP Models
+par(mfrow=c(1,2))
+plot(BoW_mlp_validation[,2], main='MLP Model Validation', xaxt='n', xlab='n Hidden Layers', 
+     col='blue', pch=1, ylim=c(0.42,0.68), ylab='Validation Accuracy', lwd=2)
+legend('bottomleft', bty='n', cex=0.9,
+       legend=c('MLP BoW 64 nodes','MLP BoW 32 nodes','MLP TF-IDF 64 nodes','MLP TF-IDF 32 nodes'), 
+       pch=c(1,3,4,5), 
+       col=c('blue','blue','red','red'))
+points(BoW_mlp_validation32[,2], col='blue', pch=3, lwd=2)
+points(mlp_validation32[,2], col='red', pch=4, lwd=2)
+points(mlp_validation[,2], col='red', pch=5, lwd=2)
+axis(1, at = c(1,2,3,4), labels = c(1,2,3,4))
+
+## XGB Models
+plot(BoW_xgb_model_summary[,6], main='XGB Model Validation', xaxt='n', xlab='eta', 
+     col='blue', pch=16, ylim=c(0.42,0.68), ylab='Accuracy', lwd=2)
+legend('bottomleft', bty='n', cex=0.9,
+       legend=c('XGB BoW','XGB TF-IDF'),
+       pch=c(16,16),
+       col=c('blue','red'))
+points(xgb_model_summary[,6], col='red', pch=16, lwd=2)
+axis(1, at = 1:7, labels = seq(0.1,0.7,0.1))
+
+
+```
+
+The decision tree model is a weak classifier for data of this dimensionality. The model struggles to classify the sentences, even when the parameters are changed to allow for more complexity and depth. The bag of words model gets a higher training accuracy, but the TF-IDF model gets a higher validation accuracy of 0.273. This is an insignificant improvement from the naive model.
+
+The XGBoost model combines the weaker decision trees into an ensemble model that performs much better. The model's in sample performance increases with the learning rate as the model is able to 'learn' more of the data available to it, however the out of sample performance suffers when the learning rate is greater than 0.5. This likely occurs as the model is over-fitting to the training data. The best performing boosted tree model is the bag of words model with a learning rate of 0.5, with a validation accuracy of 0.588.
+
+Two different structures are considered for the multi-layer perceptron. The first uses hidden nodes of 32 nodes with ReLU activations, while the second uses hidden layers of 64 nodes with ReLU activations. Both structures have the same input and output layers. For each structure, the model starts with one hidden layer and is trained and evaluated. New hidden layers are sequentially added with the model being trained and evaluated after each addition up to four hidden layers per model. Another exploratory model was trained, using up to eight hidden layers, but there was no improvement in performance. The neural net models decreases in performance as more layers were added, this could be due to overfitting of the training data. The best performing multi-layer perceptron was the bag of words model with one hidden layer of 32 nodes, with a validation accuracy of 0.602. This was also the best performing model overall.
 
 ## Discussion and Conclusion
 

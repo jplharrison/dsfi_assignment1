@@ -303,11 +303,6 @@ for(i in 1:7){
   BoW_xgb_model_summary[i,] <- c(i, parms$eta, parms$max_depth, n_rounds, round(BoW_train_pred_BoW_xgb_total,3), round(BoW_val_pred_BoW_xgb_total,3))
 }
 
-plot(BoW_xgb_model_summary[,2], BoW_xgb_model_summary[,5], type='p', ylim=c(0.5,1), pch=19, col='red',
-     xlab='eta', ylab='Prediction Error', las=1, main='XGB Model Performance')
-legend('right', legend=c('BoW_training Error','BoW_validation Error'), col=c('red','blue'), pch=19, bty='n')
-points(BoW_xgb_model_summary[,2], BoW_xgb_model_summary[,6], pch=19, col='blue')
-
 #save.image(file='xgb_models.RData')
 #load(file='xgb_models.RData')
 
@@ -324,6 +319,7 @@ m_BoW_mlp_base <- keras_model_sequential() %>%
 for(m in 1:n_mlp){
   
   m_BoW_mlp_base <- m_BoW_mlp_base %>%
+    layer_dense(units = 64, activation = "relu") %>%
     layer_dense(units = 64, activation = "relu")
   
   m_BoW_mlp_out <- m_BoW_mlp_base %>%
@@ -394,8 +390,6 @@ for(i in 1:3){
     m_trees[[(j+(i-1)*3)]] <- m_tree
   }
 }
-
-
 m_tree <- rpart(BoW_train_y~BoW_train_X, method='class',
                 control = c(20, 6, 0.5 ,5,0,0,20,0,30))
 BoW_tree_pred <- predict(m_tree, newdata = as.data.frame(BoW_train_X), type='class')
@@ -408,8 +402,16 @@ BoW_tree_summary <- cbind(c(rep(cpv[1],3), rep(cpv[2],3), rep(cpv[3],3), 0.5),
                       BoW_tree_train_accuracy,
                       BoW_tree_val_accuracy)
 colnames(BoW_tree_summary) <- c('Complexity', 'Depth', 'TrainingAccuracy', 'ValidationAccuracy')
-par(mfrow=c(2,1)); plot(BoW_tree_summary[,1], BoW_tree_summary[,3], main='Decision Tree Parameterisation', pch=16, xlab=colnames(BoW_tree_summary)[3],ylab=colnames(BoW_tree_summary)[1]); points(BoW_tree_summary[,1], BoW_tree_summary[,4], pch=16, col='red')
-plot(BoW_tree_summary[,2], BoW_tree_summary[,3], pch=16, xlab=colnames(BoW_tree_summary)[4],ylab=colnames(BoW_tree_summary)[2]); points(BoW_tree_summary[,2], BoW_tree_summary[,4], pch=16, col='red')
+par(mfrow=c(2,1)); 
+plot(BoW_tree_summary[,1], BoW_tree_summary[,3], main='Decision Tree Parameterisation', 
+     pch=16, ylab='Accuracy',xlab=colnames(BoW_tree_summary)[1]); 
+points(BoW_tree_summary[,1], BoW_tree_summary[,4], pch=16, col='red')
+points(tree_summary[,1], tree_summary[,3], pch=3, col='blue', lwd=2)
+points(tree_summary[,1], tree_summary[,4], pch=4, col='green', lwd=2)
+legend('top', bty='n', legend=c('BoW Train', 'BoW Val', 'TFIDF Train', 'TFIDF Val'), col=c('black','red','blue','green'),pch=c(16,16,3,4))
+plot(BoW_tree_summary[,2], BoW_tree_summary[,3], pch=16, ylab='Accuracy',xlab=colnames(BoW_tree_summary)[2]); points(BoW_tree_summary[,2], BoW_tree_summary[,4], pch=16, col='red')
+points(tree_summary[,2], tree_summary[,3], pch=3, col='blue', lwd=2)
+points(tree_summary[,2], tree_summary[,4], pch=4, col='green', lwd=2)
 
 
 #### BAG OF WORDS Naive and Uniform Models #### 
@@ -428,9 +430,23 @@ BoW_uniform_val_accuracy <- mean(BoW_val_y==BoW_uniform_val_pred)
 
 
 #### MODEL COMPARISON #### 
+
+par(mfrow=c(1,2)); 
+plot(BoW_tree_summary[,1], BoW_tree_summary[,3], main='Decision Tree Parameterisation', 
+     pch=16, ylab='Accuracy',xlab=colnames(BoW_tree_summary)[1]); 
+points(BoW_tree_summary[,1], BoW_tree_summary[,4], pch=16, col='red')
+points(tree_summary[,1], tree_summary[,3], pch=3, col='blue', lwd=2)
+points(tree_summary[,1], tree_summary[,4], pch=4, col='green', lwd=2)
+legend('top', bty='n', legend=c('BoW Train', 'BoW Val', 'TFIDF Train', 'TFIDF Val'), col=c('black','red','blue','green'),pch=c(16,16,3,4))
+plot(BoW_tree_summary[,2], BoW_tree_summary[,3], pch=16, ylab='Accuracy',xlab=colnames(BoW_tree_summary)[2]); points(BoW_tree_summary[,2], BoW_tree_summary[,4], pch=16, col='red')
+points(tree_summary[,2], tree_summary[,3], pch=3, col='blue', lwd=2)
+points(tree_summary[,2], tree_summary[,4], pch=4, col='green', lwd=2)
+legend('top', bty='n', legend=c('BoW Train', 'BoW Val', 'TFIDF Train', 'TFIDF Val'), col=c('black','red','blue','green'),pch=c(16,16,3,4))
+
 ## MLP Models
 par(mfrow=c(1,2))
-plot(BoW_mlp_validation[,2], main='MLP Model Validation', xaxt='n', xlab='n Hidden Layers', col='blue', pch=1, ylim=c(0.48,0.62), ylab='Validation Accuracy', lwd=2)
+plot(BoW_mlp_validation[,2], main='MLP Model Validation', xaxt='n', xlab='n Hidden Layers', 
+     col='blue', pch=1, ylim=c(0.42,0.68), ylab='Validation Accuracy', lwd=2)
 legend('bottomleft', bty='n', cex=0.9,
        legend=c('MLP BoW 64 nodes','MLP BoW 32 nodes','MLP TF-IDF 64 nodes','MLP TF-IDF 32 nodes'), 
        pch=c(1,3,4,5), 
@@ -438,16 +454,23 @@ legend('bottomleft', bty='n', cex=0.9,
 points(BoW_mlp_validation32[,2], col='blue', pch=3, lwd=2)
 points(mlp_validation32[,2], col='red', pch=4, lwd=2)
 points(mlp_validation[,2], col='red', pch=5, lwd=2)
+#points(BoW_mlp_metrics[,30], col='blue', pch=1, lwd=2)
+#points(BoW_mlp_metrics[,30], col='blue', pch=3, lwd=2)
+#points(mlp_metrics32[,30], col='red', pch=4, lwd=2)
+#points(mlp_metrics[,30], col='red', pch=5, lwd=2)
 axis(1, at = c(1,2,3,4), labels = c(1,2,3,4))
 
 ## XGB Models
+#par(mfrow=c(1,1))
 plot(BoW_xgb_model_summary[,6], main='XGB Model Validation', xaxt='n', xlab='eta', 
-     col='blue', pch=16, ylim=c(0.48,0.62), ylab='Validation Accuracy', lwd=2)
+     col='blue', pch=16, ylim=c(0.42,0.68), ylab='Accuracy', lwd=2)
 legend('bottomleft', bty='n', cex=0.9,
-       legend=c('XGB BoW','XGB TF-IDF'), 
+       legend=c('XGB BoW','XGB TF-IDF'),#,'XGB BoW Train','XGB TF-IDF Train'), 
        pch=c(16,16),
        col=c('blue','red'))
 points(xgb_model_summary[,6], col='red', pch=16, lwd=2)
+#points(BoW_xgb_model_summary[,5], col='blue', pch=4, lwd=2)
+#points(xgb_model_summary[,5], col='red', pch=4, lwd=2)
 axis(1, at = 1:7, labels = seq(0.1,0.7,0.1))
 
 ### Best model from each model class:
@@ -460,5 +483,6 @@ axis(1, at = 1:7, labels = seq(0.1,0.7,0.1))
 
 
 
+save.image(file='a1data.RData')
 
 
